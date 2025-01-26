@@ -3,8 +3,11 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
-from support_func import *
 import warnings
+import tempfile
+import os
+from support_func import *
+
 
 
 st.set_page_config(page_title="Visual Manager", page_icon=':money_with_wings:')
@@ -20,9 +23,18 @@ if "derived_data" not in st.session_state:
 # var to alert end user if current data is randomly generated
 synthetic_data = False
 valid_data = False
-
+#advanced setting
+adv = False
 data_source = st.sidebar.radio("Choose a data source:", ("Upload File", "Generate Random Data"))
 if data_source == "Upload File":
+    advanced = st.checkbox("Advanced")
+    if advanced:
+        st.write("""Advanced Option allows the program to read data that doesn't conform to a traditional structure.
+                    Use in case of irregular rows or columns""")
+        adv = True 
+    else:
+        adv = False
+        
     # upload file
     uploaded_file = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xlsx"], key="uploaded_file")
 
@@ -30,15 +42,31 @@ if data_source == "Upload File":
     if uploaded_file:
         synthetic_data = False
         # error handling if file structure is not valid
+
         try:
+                
             # set file extension to lower case
             file_name = uploaded_file.name.lower()
-
-            # Display the uploaded file as a dataframe
-            if file_name.endswith(".csv"):
-                df = pd.read_csv(uploaded_file)
-            elif file_name.endswith(".xlsx"):
-                df = pd.read_excel(uploaded_file,engine='openpyxl')
+            print(file_name)
+            
+            if adv == True:
+                # if adavanced option slected, save file as temporary file for further management
+                with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[-1]) as temp_file:
+                    temp_file.write(uploaded_file.read())  # Save the uploaded file
+                    temp_file_path = temp_file.name  # Get the path to the temporary file
+                
+                if file_name.endswith(".csv"):
+                    df = dynamic_read_csv(temp_file_path)
+                elif file_name.endswith(".xlsx"):
+                    df = dynamic_read_excel(temp_file_path)
+                # print(df)
+                os.remove(temp_file_path)
+            else:
+                # display the uploaded file as a dataframe
+                if file_name.endswith(".csv"):
+                    df = pd.read_csv(uploaded_file)
+                elif file_name.endswith(".xlsx"):
+                    df = pd.read_excel(uploaded_file,engine='openpyxl')
 
             # reset index if index is not numerical 
             if list(df.index) != list(range(len(df))):
@@ -88,7 +116,8 @@ if data_source == "Upload File":
                             raise ValueError("Invalid dates detected in the selected Date column.")
                         
                         if dep_col != wit_col:
-                            
+                            selected_data[dep_col] = selected_data[dep_col].apply(extract_numeric_value)
+                            selected_data[wit_col] = selected_data[wit_col].apply(extract_numeric_value)
                             new_df["Deposits"] = pd.to_numeric(selected_data[dep_col], errors="coerce")
                             new_df["Withdrawals"] = pd.to_numeric(selected_data[wit_col], errors="coerce")
                             new_df = combine_activity(new_df,"Deposits","Withdrawals")
@@ -109,10 +138,12 @@ if data_source == "Upload File":
                             new_df["Description"] = "N/A"
                         
                         if balance_col:
+                            print(selected_data[balance_col].dtype)
+                            print(selected_data[balance_col])
+                            selected_data[balance_col] = selected_data[balance_col].apply(extract_numeric_value)
                             new_df["Balance"] = pd.to_numeric(selected_data[balance_col], errors="coerce")
                             # Check for invalid balances
-                            if new_df["Balance"].isna().any():
-                                raise ValueError("Invalid numeric values detected in the selected Balance column.")
+                            new_df["Balance"] = new_df['Balance'].fillna(0)
                         else:
                             new_df["Balance"] = np.nan
                         
@@ -128,6 +159,7 @@ if data_source == "Upload File":
                 
         except Exception as e:
             st.write('Uploaded Data not valid.')
+            st.write('Try Using Advanced Settings. User Might have to Use Custom Range')
 
     else:
         # clear session state when no file is uploaded
