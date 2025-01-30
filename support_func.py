@@ -8,6 +8,10 @@ import csv
 from datetime import datetime, timedelta
 
 def extract_numeric_value(value):
+    var = str(type(value))
+    if 'float' in var or 'int' in var:
+        return float(value)
+        
     # regex to find numerical value
     value = value.replace(',', '')
     match = re.search(r"[-+]?\d*\.\d+|\d+", value)
