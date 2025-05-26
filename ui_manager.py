@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 import plotly.express as px
 import numpy as np
 
@@ -31,6 +32,7 @@ class UIManager:
         st.write("### Select Data Range")
         self.dm.start_row = st.number_input("Start Row", min_value=0, max_value=len(df) - 1, value=0, step=1, key="start_row")
         self.dm.end_row = st.number_input("End Row", min_value=0, max_value=len(df), value=len(df), step=1, key="end_row")
+
 
         return st.button("Generate Derived Data")
 
@@ -113,7 +115,22 @@ class UIManager:
 
         for t in ["Income", "Expense"]:
             st.write(f"### {t}")
-            filtered = grouped[grouped["Type"] == t]
+            filtered = grouped[grouped["Type"] == t].sort_values(by="Amount", ascending=False)
+
+            # Dropdown menu with amounts
+            descriptions_with_amounts = [f"{desc} ({amount:,.2f})" for desc, amount in zip(filtered["Description"], filtered["Amount"])]
+            selected_desc = st.selectbox(f"Select a {t.lower()} type to highlight", descriptions_with_amounts, key=f"{t.lower()}_selectbox")
+
+            # Search box for similar matches
+            search_input = st.text_input(f"Search {t.lower()} type", key=f"{t.lower()}_search")
+            if search_input:
+                matches = filtered[filtered["Description"].str.contains(search_input, case=False, na=False)]
+                if matches.empty:
+                    st.info("No matches found.")
+                else:
+                    st.write(f"### Matching {t.lower()} types:")
+                    st.dataframe(matches)
+
             if filtered.empty:
                 st.warning(f"No {t.lower()} data available.")
                 continue

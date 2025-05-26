@@ -44,46 +44,6 @@ def combine_activity(df, deposits_col, withdrawals_col):
     
     return df
 
-# Advanced CSV Dataframe Generator
-def dynamic_read_csv(file_path):
-    # Read the CSV file line by line
-    data = []
-    max_columns = 0
-
-    with open(file_path, 'r', encoding='utf-8') as f:
-        reader = csv.reader(f)
-        for row in reader:
-            data.append(row)  # Append the row to the data list
-            max_columns = max(max_columns, len(row))  # Update max column count
-
-    # Create column names dynamically
-    column_names = [f"Column_{i+1}" for i in range(max_columns)]
-
-    # Convert data to a DataFrame
-    df = pd.DataFrame(data, columns=column_names)
-    return df
-    
-
-# Davanced Excel (xlsx) Dataframe Generator
-def dynamic_read_excel(file_path):
-    # Load the Excel file
-    workbook = openpyxl.load_workbook(file_path, data_only=True)
-    sheet = workbook.active
-
-    # Determine the maximum number of columns
-    max_columns = 0
-    data = []
-
-    for row in sheet.iter_rows(values_only=True):
-        data.append(row)  # Collect all rows
-        max_columns = max(max_columns, len(row))  # Update max column count
-
-    # Create column names dynamically
-    column_names = [f"Column_{i+1}" for i in range(max_columns)]
-
-    # Convert data to a DataFrame
-    df = pd.DataFrame(data, columns=column_names)
-    return df
 
 
 class DataGenerator:

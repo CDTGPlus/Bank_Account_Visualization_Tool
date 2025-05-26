@@ -1,8 +1,6 @@
 import pandas as pd
 import numpy as np
-import os
-import tempfile
-from support_func import dynamic_read_csv, dynamic_read_excel, extract_numeric_value, combine_activity, DataGenerator
+from support_func import *
 import streamlit as st
 
 class DataManager:
@@ -11,32 +9,16 @@ class DataManager:
         self.derived_data = None
         self.synthetic_data = False
 
-    @st.cache_data
-    def load_csv(self, path):
-        return dynamic_read_csv(path)
-
-    @st.cache_data
-    def load_excel(self, path):
-        return dynamic_read_excel(path)
-
-    def load_uploaded_file(self, uploaded_file, advanced=False):
+  
+    def load_uploaded_file(self, uploaded_file):
+        
         try:
             file_name = uploaded_file.name.lower()
-            if advanced:
-                with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file_name)[-1]) as temp_file:
-                    temp_file.write(uploaded_file.read())
-                    temp_file_path = temp_file.name
-
-                if file_name.endswith(".csv"):
-                    df = self.load_csv(temp_file_path)
-                elif file_name.endswith(".xlsx"):
-                    df = self.load_excel(temp_file_path)
-                os.remove(temp_file_path)
-            else:
-                if file_name.endswith(".csv"):
-                    df = pd.read_csv(uploaded_file)
-                elif file_name.endswith(".xlsx"):
-                    df = pd.read_excel(uploaded_file, engine='openpyxl')
+        
+            if file_name.endswith(".csv"):
+                df = pd.read_csv(uploaded_file)
+            elif file_name.endswith(".xlsx"):
+                df = pd.read_excel(uploaded_file, engine='openpyxl')
 
             if list(df.index) != list(range(len(df))):
                 df = df.reset_index()
