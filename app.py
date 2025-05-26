@@ -17,6 +17,8 @@ data_source = st.sidebar.radio("Choose a data source:", ("Upload File", "Generat
 if data_source == "Upload File":
     uploaded_file = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xlsx"], key="uploaded_file")
     if uploaded_file:
+        # clear past derived data if a new file is uploaded
+        st.session_state["derived_data"] = None
         with st.spinner("Loading uploaded file..."):
             data_manager.load_uploaded_file(uploaded_file)
 else:
@@ -27,28 +29,32 @@ else:
 if data_manager.original_data is not None:
     with st.expander("Original Data Preview", expanded=False):
         ui_manager.display_original_data()
+    
     if ui_manager.assign_columns_and_range():
         with st.spinner("Processing derived data..."):
-            try:
-                data_manager.generate_derived_data()
-            except Exception as e:
-                st.error(f"Error generating derived data: {e}")
+            data_manager.generate_derived_data()
+   
 
 # Display derived data and analytics
+
 if (
     "derived_data" in st.session_state
     and st.session_state["derived_data"] is not None
     and not st.session_state["derived_data"].empty
 ):
-    ui_manager.display_date_range_selector()
-    with st.expander("View Transformed Data", expanded=False):
-        ui_manager.display_derived_data()
-    with st.spinner("Rendering account activity chart..."):
-        ui_manager.display_account_activity_graph()
-    with st.spinner("Rendering income and expense summaries..."):
-        ui_manager.display_income_expense_summary()
-    with st.spinner("Rendering balance trend graph..."):
-        ui_manager.display_balance_graph()
+    if data_manager.original_data is not None:
+        try:
+            ui_manager.display_date_range_selector()
+            with st.expander("View Transformed Data", expanded=False):
+                ui_manager.display_derived_data()
+            with st.spinner("Rendering account activity chart..."):
+                ui_manager.display_account_activity_graph()
+            with st.spinner("Rendering income and expense summaries..."):
+                ui_manager.display_income_expense_summary()
+            with st.spinner("Rendering balance trend graph..."):
+                ui_manager.display_balance_graph()
+        except Exception as e:
+            st.error(f"An error occurred while processing the data: {e}")
 else:
     st.info("No derived data available. Please upload a file and generate derived data.")
 

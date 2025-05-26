@@ -25,6 +25,7 @@ class DataManager:
                 df.rename(columns={"index": "original_index"}, inplace=True)
 
             self.original_data = df
+            st.session_state["original_data"] = df
         except Exception as e:
             self.original_data = None
             self.derived_data = None
@@ -38,39 +39,45 @@ class DataManager:
 
     def generate_derived_data(self):
         df = self.original_data
-        start_row = self.start_row
-        end_row = self.end_row
-        selected_data = df.iloc[start_row:end_row].copy()
+        try:
+            start_row = self.start_row
+            end_row = self.end_row
+            selected_data = df.iloc[start_row:end_row].copy()
 
-        new_df = pd.DataFrame()
-        new_df["Date"] = pd.to_datetime(selected_data[self.date_col], errors="coerce")
+            new_df = pd.DataFrame()
+            new_df["Date"] = pd.to_datetime(selected_data[self.date_col], errors="coerce")
 
-        if self.dep_col != self.wit_col:
-            selected_data[self.dep_col] = selected_data[self.dep_col].apply(extract_numeric_value)
-            selected_data[self.wit_col] = selected_data[self.wit_col].apply(extract_numeric_value)
-            new_df["Deposits"] = pd.to_numeric(selected_data[self.dep_col], errors="coerce")
-            new_df["Withdrawals"] = pd.to_numeric(selected_data[self.wit_col], errors="coerce")
-            new_df = combine_activity(new_df, "Deposits", "Withdrawals")
-        else:
-            new_df["Amount"] = pd.to_numeric(
-                selected_data[self.dep_col].apply(extract_numeric_value), errors="coerce"
-            ).fillna(0)
+            if self.dep_col != self.wit_col:
+                selected_data[self.dep_col] = selected_data[self.dep_col].apply(extract_numeric_value)
+                selected_data[self.wit_col] = selected_data[self.wit_col].apply(extract_numeric_value)
+                new_df["Deposits"] = pd.to_numeric(selected_data[self.dep_col], errors="coerce")
+                new_df["Withdrawals"] = pd.to_numeric(selected_data[self.wit_col], errors="coerce")
+                new_df = combine_activity(new_df, "Deposits", "Withdrawals")
+            else:
+                new_df["Amount"] = pd.to_numeric(
+                    selected_data[self.dep_col].apply(extract_numeric_value), errors="coerce"
+                ).fillna(0)
 
-            if new_df["Amount"].ge(0).all() or new_df["Amount"].le(0).all():
-                st.warning("⚠️ The selected column contains only one direction of cash flow (all positive or all negative). Income/expense graphs may not show correctly.")
+                if new_df["Amount"].ge(0).all() or new_df["Amount"].le(0).all():
+                    st.warning("⚠️ The selected column contains only one direction of cash flow (all positive or all negative). Income/expense graphs may not show correctly.")
 
-        if self.description_col:
-            new_df["Description"] = selected_data[self.description_col].astype(str).fillna("Unknown")
-        else:
-            new_df["Description"] = "N/A"
+            if self.description_col:
+                new_df["Description"] = selected_data[self.description_col].astype(str).fillna("Unknown")
+            else:
+                new_df["Description"] = "N/A"
 
-        if self.balance_col:
-            selected_data[self.balance_col] = selected_data[self.balance_col].apply(extract_numeric_value)
-            balance = pd.to_numeric(selected_data[self.balance_col], errors="coerce")
-            new_df["Balance"] = balance.fillna(np.nan)
-        else:
-            new_df["Balance"] = np.nan
+            if self.balance_col:
+                selected_data[self.balance_col] = selected_data[self.balance_col].apply(extract_numeric_value)
+                balance = pd.to_numeric(selected_data[self.balance_col], errors="coerce")
+                new_df["Balance"] = balance.fillna(np.nan)
+            else:
+                new_df["Balance"] = np.nan
 
-        new_df = new_df.reset_index(drop=True)
-        self.derived_data = new_df
-        st.session_state["derived_data"] = new_df
+            new_df = new_df.reset_index(drop=True)
+            self.derived_data = new_df
+            st.session_state["derived_data"] = new_df
+
+        except Exception as e:
+            st.error(f"Error generating derived data: {e}")
+            self.derived_data = None
+            st.session_state["derived_data"] = None
