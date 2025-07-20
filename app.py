@@ -30,9 +30,12 @@ if data_manager.original_data is not None:
     with st.expander("Original Data Preview", expanded=False):
         ui_manager.display_original_data()
     
-    if ui_manager.assign_columns_and_range():
-        with st.spinner("Processing derived data..."):
-            data_manager.generate_derived_data()
+    if ui_manager.assign_columns_and_range() or st.session_state.get("generate_derived", False):
+        if st.session_state.get("generate_derived", False):
+            # Only regenerate if derived data is missing
+            if "derived_data" not in st.session_state or st.session_state["derived_data"] is None:
+                with st.spinner("Re-generating derived data..."):
+                    data_manager.generate_derived_data()
    
 
 # Display derived data and analytics
@@ -57,5 +60,3 @@ if (
             st.error(f"An error occurred while processing the data: {e}")
 else:
     st.info("No derived data available. Please upload a file and generate derived data.")
-
-

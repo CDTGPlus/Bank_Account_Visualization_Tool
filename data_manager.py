@@ -40,6 +40,14 @@ class DataManager:
     def generate_derived_data(self):
         df = self.original_data
         try:
+            self.date_col = st.session_state.get("date_col")
+            self.dep_col = st.session_state.get("dep_col")
+            self.wit_col = st.session_state.get("wit_col")
+            self.description_col = st.session_state.get("description_col")
+            self.balance_col = st.session_state.get("balance_col")
+            self.start_row = st.session_state.get("start_row")
+            self.end_row = st.session_state.get("end_row")
+            
             start_row = self.start_row
             end_row = self.end_row
             selected_data = df.iloc[start_row:end_row].copy()

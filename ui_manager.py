@@ -34,7 +34,16 @@ class UIManager:
         self.dm.end_row = st.number_input("End Row", min_value=0, max_value=len(df), value=len(df), step=1, key="end_row")
 
 
-        return st.button("Generate Derived Data")
+        return_value = st.button("Generate Derived Data")
+        if return_value:
+            st.session_state["date_col"] = self.dm.date_col
+            st.session_state["dep_col"] = self.dm.dep_col
+            st.session_state["wit_col"] = self.dm.wit_col
+            st.session_state["description_col"] = self.dm.description_col
+            st.session_state["balance_col"] = self.dm.balance_col
+            
+            st.session_state["generate_derived"] = True  # <-- trigger flag
+        return return_value
 
     def get_active_df(self):
         df = st.session_state.get("filtered_data")
@@ -124,7 +133,7 @@ class UIManager:
             # Search box for similar matches
             search_input = st.text_input(f"Search {t.lower()} type", key=f"{t.lower()}_search")
             if search_input:
-                matches = filtered[filtered["Description"].str.contains(search_input, case=False, na=False)]
+                matches = filtered[filtered["Description"].str.contains(search_input, case=False, na=False)].reset_index(drop=True)
                 if matches.empty:
                     st.info("No matches found.")
                 else:
